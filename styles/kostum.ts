@@ -31,4 +31,17 @@ export const kostumStyles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 5,
     },
+
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: "bold",
+        marginBottom: 10,
+    },
+
+    filterButton: {
+        backgroundColor: "white",
+        padding: 12,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
 });
