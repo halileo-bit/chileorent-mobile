@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import {
   router,
@@ -8,11 +8,17 @@ import {
 import { useEffect, useState } from "react";
 
 import {
+  ErrorState,
   KelengkapanCard,
+  LoadingIndicator,
   SewaCard,
+  UlasanCard,
 } from "@/components";
 
 import { kostums } from "@/constants";
+import { fetchUlasanKostum } from "@/services";
+import { kostumStyles, ulasanStyles } from "@/styles";
+import type { UlasanExternal } from "@/types";
 
 import {
   filterSewas,
@@ -25,8 +31,6 @@ import {
   getSewasByKostum,
   getUkuran,
 } from "@/functions";
-
-import { kostumStyles } from "@/styles";
 
 type Filter = "semua" | "selesai" | "aktif";
 
@@ -46,11 +50,60 @@ export default function KostumDetail() {
       )
     );
 
+  // State untuk ulasan dari External API (Modul 3)
+  const [ulasans, setUlasans] = useState<UlasanExternal[]>([]);
+  const [isLoadingUlasan, setIsLoadingUlasan] = useState<boolean>(true);
+  const [errorUlasan, setErrorUlasan] = useState<string | null>(null);
+
   const kostum = kostums.find(
     (item) =>
       item.idKostum === Number(idKostum)
   );
 
+  // Custom Async / Promise handler yang dipanggil oleh tombol event user
+  function handleMuatUlasan(simulateError: boolean = false) {
+    setIsLoadingUlasan(true);
+    setErrorUlasan(null);
+
+    // Memanggil Custom Async Function yang mengonsumsi External API
+    // dengan pemanfaatan .then() untuk menangani resolve dan .catch() untuk reject
+    fetchUlasanKostum(Number(idKostum), simulateError)
+      .then((data: UlasanExternal[]) => {
+        // [1] .then(): Memasukkan data ke dalam state Object Interface UlasanExternal
+        setUlasans(data);
+        setIsLoadingUlasan(false);
+      })
+      .catch((err: Error) => {
+        // [2] .catch(): Menangani Promise yang di-reject
+        setErrorUlasan(err.message || "Gagal memuat ulasan eksternal.");
+        setIsLoadingUlasan(false);
+      });
+  }
+
+  // Load awal ulasan menggunakan lifecycle useEffect
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchUlasanKostum(Number(idKostum), false)
+      .then((data: UlasanExternal[]) => {
+        if (isMounted) {
+          setUlasans(data);
+          setIsLoadingUlasan(false);
+        }
+      })
+      .catch((err: Error) => {
+        if (isMounted) {
+          setErrorUlasan(err.message || "Gagal memuat ulasan eksternal.");
+          setIsLoadingUlasan(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [idKostum]);
+
+  // Efek filter status sewa
   useEffect(() => {
     const data = getSewasByKostum(
       Number(idKostum)
@@ -61,6 +114,7 @@ export default function KostumDetail() {
       filter
     );
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilteredSewas(result);
   }, [filter, idKostum]);
 
@@ -198,6 +252,57 @@ export default function KostumDetail() {
           sewa={sewa}
         />
       ))}
+
+      {/* =========================================================
+          ULASAN & TESTIMONI PENYEWA (EXTERNAL API - MODUL 3)
+          Kriteria Penilaian:
+          1. Mengambil data dari External API & mapping ke Object Interface
+          2. Menggunakan Custom & Pre-built Async Function
+          3. Menggunakan fungsi .then(), .resolve(), dan .reject()
+         ========================================================= */}
+      <Text style={kostumStyles.sectionTitle}>
+        Ulasan Penyewa (External API)
+      </Text>
+
+      {/* Tombol Uji Coba Simulasi Resolve vs Reject untuk Demo Praktikum */}
+      <View style={ulasanStyles.simulationRow}>
+        <Pressable
+          onPress={() => handleMuatUlasan(false)}
+          style={[ulasanStyles.actionButton, ulasanStyles.btnSuccess]}
+        >
+          <Text style={ulasanStyles.btnTextSuccess}>⚡ Muat Ulang (Resolve)</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => handleMuatUlasan(true)}
+          style={[ulasanStyles.actionButton, ulasanStyles.btnError]}
+        >
+          <Text style={ulasanStyles.btnTextError}>⚠️ Uji Error (Reject)</Text>
+        </Pressable>
+      </View>
+
+      {isLoadingUlasan && (
+        <LoadingIndicator pesan="Mengambil ulasan penyewa dari External API..." />
+      )}
+
+      {errorUlasan && (
+        <ErrorState
+          pesan={errorUlasan}
+          onRetry={() => handleMuatUlasan(false)}
+        />
+      )}
+
+      {!isLoadingUlasan && !errorUlasan && (
+        <>
+          {ulasans.length === 0 ? (
+            <Text style={kostumStyles.text}>Belum ada ulasan untuk kostum ini.</Text>
+          ) : (
+            ulasans.map((item) => (
+              <UlasanCard key={item.id} ulasan={item} />
+            ))
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }

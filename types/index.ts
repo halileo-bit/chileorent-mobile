@@ -6,3 +6,4 @@ export type { Pemilik } from "./pemilik";
 export type { Kostum } from "./kostum";
 export type { Kelengkapan } from "./kelengkapan";
 export type { Sewa } from "./sewa";
+export type { UserReviewer, UlasanExternal, ApiResponse } from "./ulasan";
