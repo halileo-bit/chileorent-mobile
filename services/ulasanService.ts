@@ -8,84 +8,55 @@
  * ========================================================= */
 
 import type { ApiResponse, UlasanExternal, UserReviewer } from "@/types";
-import { checkKoneksiApi, validasiDataUlasan } from "./api";
+import { requestDenganTimeout, validasiDataUlasan } from "./api";
 
 // Endpoint External API publik DummyJSON
 const API_BASE_URL = "https://dummyjson.com/comments";
 
 /**
- * 1. FUNGSI MENGGUNAKAN .then() CHAINING
- * Menggunakan Pre-built Async Function: fetch()
- * Menggunakan .then() untuk menangani response dan parsing JSON
- * Memasukkan data ke dalam Object menggunakan Interface UlasanExternal & UserReviewer
+ * CUSTOM ASYNC FUNCTION
+ * Mengambil data ulasan dari External API secara otomatis:
+ * - Menggunakan custom Promise helper requestDenganTimeout() yang menerapkan .resolve() dan .reject() otomatis berdasarkan internet
+ * - Memetakan data JSON ke dalam Array of Object dengan Interface UlasanExternal & UserReviewer
+ * - Melakukan validasi data ulasan dengan validasiDataUlasan()
  */
-export function fetchUlasanWithThen(
+export async function fetchUlasanKostum(
   idKostum: number
 ): Promise<UlasanExternal[]> {
   // Offset pagination berdasarkan ID kostum agar data tiap kostum bervariasi
   const skip = (Math.max(1, idKostum) - 1) * 3;
   const endpoint = `${API_BASE_URL}?limit=3&skip=${skip}`;
 
-  // Menggunakan pre-built async function `fetch` dan method `.then()`
-  return fetch(endpoint)
-    .then((response: Response) => {
-      if (!response.ok) {
-        throw new Error(
-          `Gagal menghubungi server! Status HTTP: ${response.status}`
-        );
-      }
-      // .then() mengembalikan Promise hasil parse JSON
-      return response.json();
-    })
-    .then((data: ApiResponse<any>) => {
-      // Memasukkan data ke dalam Array of Object dengan tipe Interface UlasanExternal
-      const daftarUlasan: UlasanExternal[] = data.comments.map(
-        (item: any, index: number) => {
-          // Object reviewer sesuai Interface UserReviewer
-          const reviewer: UserReviewer = {
-            id: item.user.id,
-            username: item.user.username,
-            fullName: item.user.fullName || `@${item.user.username}`,
-          };
+  // Menggunakan helper custom Promise yang otomatis resolve jika ada internet atau reject jika offline/timeout
+  const rawData = await requestDenganTimeout<ApiResponse<any>>(endpoint);
 
-          // Object ulasan sesuai Interface UlasanExternal
-          const ulasan: UlasanExternal = {
-            id: item.id,
-            body: item.body,
-            postId: item.postId,
-            likes: item.likes,
-            user: reviewer,
-            rating: 4 + (index % 2 === 0 ? 1 : 0), // rating simulasi 4 atau 5 bintang
-            tanggal: `2026-10-${15 + ((index + idKostum) % 12)}`,
-          };
+  // Memasukkan data ke dalam Array of Object dengan tipe Interface UlasanExternal
+  const daftarUlasan: UlasanExternal[] = rawData.comments.map(
+    (item: any, index: number) => {
+      // Object reviewer sesuai Interface UserReviewer
+      const reviewer: UserReviewer = {
+        id: item.user.id,
+        username: item.user.username,
+        fullName: item.user.fullName || `@${item.user.username}`,
+      };
 
-          return ulasan;
-        }
-      );
+      // Object ulasan sesuai Interface UlasanExternal
+      const ulasan: UlasanExternal = {
+        id: item.id,
+        body: item.body,
+        postId: item.postId,
+        likes: item.likes,
+        user: reviewer,
+        rating: 4 + (index % 2 === 0 ? 1 : 0), // rating simulasi 4 atau 5 bintang
+        tanggal: `2026-10-${15 + ((index + idKostum) % 12)}`,
+      };
 
-      return daftarUlasan;
-    });
-}
+      return ulasan;
+    }
+  );
 
-/**
- * 2. CUSTOM ASYNC FUNCTION
- * Fungsi async buatan sendiri (Custom Async Function) yang mengombinasikan:
- * - Custom Promise resolve() & reject() dari checkKoneksiApi()
- * - Pre-built async function via fetchUlasanWithThen()
- * - Validasi data dengan validasiDataUlasan()
- */
-export async function fetchUlasanKostum(
-  idKostum: number,
-  simulateError: boolean = false
-): Promise<UlasanExternal[]> {
-  // Langkah 1: Jalankan simulasi pemeriksaan koneksi dengan custom Promise (resolve / reject)
-  await checkKoneksiApi(simulateError);
+  // Validasi data dengan Promise executor resolve/reject
+  await validasiDataUlasan(daftarUlasan.length);
 
-  // Langkah 2: Ambil data dari external API menggunakan .then() chaining
-  const ulasans = await fetchUlasanWithThen(idKostum);
-
-  // Langkah 3: Validasi data dengan Promise executor
-  await validasiDataUlasan(ulasans.length);
-
-  return ulasans;
+  return daftarUlasan;
 }

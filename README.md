@@ -11,8 +11,8 @@ Aplikasi mobile menggunakan **Expo (React Native + TypeScript)** dengan tema dan
 | Kriteria Penilaian | Bobot | Lokasi Implementasi & Penjelasan |
 |---|---|---|
 | **1. Mengambil data dari External API dan memasukkannya ke dalam Object menggunakan Interface** | 10% | - **Interface**: `types/ulasan.ts` mendefinisikan `interface UlasanExternal`, `interface UserReviewer`, dan `interface ApiResponse<T>`.<br>- **External API**: `services/ulasanService.ts` memanggil endpoint publik `https://dummyjson.com/comments` dan memetakan datanya ke dalam Array of Object sesuai Interface. |
-| **2. Menggunakan Custom & Pre-built Async Function** | 10% | - **Pre-built Async Function**: `fetch()` bawaan JavaScript runtime digunakan untuk HTTP request ke endpoint API.<br>- **Custom Async Function**: `fetchUlasanKostum(idKostum, simulateError)` pada `services/ulasanService.ts` yang menggabungkan pengecekan koneksi, fetching, dan validasi data. |
-| **3. Menggunakan fungsi `.then()`, `.resolve()`, dan `.reject()`** | 10% | - **`resolve()` & `reject()`**: `services/api.ts` pada fungsi `checkKoneksiApi()` dan `validasiDataUlasan()` yang menggunakan constructor `new Promise((resolve, reject) => { ... })`. Menjalankan `resolve()` saat operasi sukses dan `reject()` saat simulasi error/koneksi terputus.<br>- **`.then()`**: `fetchUlasanWithThen()` dan `handleMuatUlasan()` menggunakan rantai `.then()` untuk memproses respon API dan `.catch()` untuk menangani rejection. |
+| **2. Menggunakan Custom & Pre-built Async Function** | 10% | - **Pre-built Async Function**: `fetch()` bawaan JavaScript runtime digunakan untuk HTTP request ke endpoint API.<br>- **Custom Async Function**: `fetchUlasanKostum(idKostum)` pada `services/ulasanService.ts` yang mengintegrasikan timeout request, fetching, dan validasi data. |
+| **3. Menggunakan fungsi `.then()`, `.resolve()`, dan `.reject()`** | 10% | - **`resolve()` & `reject()`**: `services/api.ts` pada fungsi `requestDenganTimeout()` dan `validasiDataUlasan()` yang menggunakan constructor `new Promise((resolve, reject) => { ... })`. Menjalankan `resolve()` secara otomatis saat data berhasil diambil dari internet, dan `reject()` saat perangkat offline / koneksi timeout.<br>- **`.then()`**: Digunakan pada Promise chaining di `requestDenganTimeout()` dan `muatUlasan()` di `app/kostum/[idKostum].tsx` dengan `.catch()` untuk menangani rejection. |
 
 ---
 
@@ -88,6 +88,6 @@ chileorent-mobile/
    npx expo start --go
    ```
 
-3. Pada halaman detail kostum (`/kostum/[idKostum]`), Anda dapat menguji:
-   - **⚡ Muat Ulang (Resolve)**: Menguji pengambilan ulasan dari External API secara sukses.
-   - **⚠️ Uji Error (Reject)**: Menguji penanganan error ketika Promise di-`reject()`.
+3. Buka halaman detail kostum (`/kostum/[idKostum]`):
+   - Aplikasi akan otomatis memuat ulasan penyewa dari External API saat terhubung ke internet.
+   - Jika koneksi internet dimatikan (mode offline), Promise akan otomatis di-`reject()` dan menampilkan error state dengan tombol `🔄 Coba Lagi`.

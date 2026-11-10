@@ -1,5 +1,2 @@
-export { checkKoneksiApi, validasiDataUlasan } from "./api";
-export {
-  fetchUlasanKostum,
-  fetchUlasanWithThen,
-} from "./ulasanService";
+export { requestDenganTimeout, validasiDataUlasan } from "./api";
+export { fetchUlasanKostum } from "./ulasanService";

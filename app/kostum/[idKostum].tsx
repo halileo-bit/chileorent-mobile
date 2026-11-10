@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text } from "react-native";
 
 import {
   router,
@@ -17,7 +17,7 @@ import {
 
 import { kostums } from "@/constants";
 import { fetchUlasanKostum } from "@/services";
-import { kostumStyles, ulasanStyles } from "@/styles";
+import { kostumStyles } from "@/styles";
 import type { UlasanExternal } from "@/types";
 
 import {
@@ -60,31 +60,31 @@ export default function KostumDetail() {
       item.idKostum === Number(idKostum)
   );
 
-  // Custom Async / Promise handler yang dipanggil oleh tombol event user
-  function handleMuatUlasan(simulateError: boolean = false) {
+  // Mengambil ulasan dari External API (otomatis tergantung koneksi internet)
+  function muatUlasan() {
     setIsLoadingUlasan(true);
     setErrorUlasan(null);
 
     // Memanggil Custom Async Function yang mengonsumsi External API
     // dengan pemanfaatan .then() untuk menangani resolve dan .catch() untuk reject
-    fetchUlasanKostum(Number(idKostum), simulateError)
+    fetchUlasanKostum(Number(idKostum))
       .then((data: UlasanExternal[]) => {
         // [1] .then(): Memasukkan data ke dalam state Object Interface UlasanExternal
         setUlasans(data);
         setIsLoadingUlasan(false);
       })
       .catch((err: Error) => {
-        // [2] .catch(): Menangani Promise yang di-reject
+        // [2] .catch(): Menangani Promise yang di-reject (offline / timeout)
         setErrorUlasan(err.message || "Gagal memuat ulasan eksternal.");
         setIsLoadingUlasan(false);
       });
   }
 
-  // Load awal ulasan menggunakan lifecycle useEffect
+  // Load awal ulasan saat halaman dibuka
   useEffect(() => {
     let isMounted = true;
 
-    fetchUlasanKostum(Number(idKostum), false)
+    fetchUlasanKostum(Number(idKostum))
       .then((data: UlasanExternal[]) => {
         if (isMounted) {
           setUlasans(data);
@@ -264,23 +264,6 @@ export default function KostumDetail() {
         Ulasan Penyewa (External API)
       </Text>
 
-      {/* Tombol Uji Coba Simulasi Resolve vs Reject untuk Demo Praktikum */}
-      <View style={ulasanStyles.simulationRow}>
-        <Pressable
-          onPress={() => handleMuatUlasan(false)}
-          style={[ulasanStyles.actionButton, ulasanStyles.btnSuccess]}
-        >
-          <Text style={ulasanStyles.btnTextSuccess}>⚡ Muat Ulang (Resolve)</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => handleMuatUlasan(true)}
-          style={[ulasanStyles.actionButton, ulasanStyles.btnError]}
-        >
-          <Text style={ulasanStyles.btnTextError}>⚠️ Uji Error (Reject)</Text>
-        </Pressable>
-      </View>
-
       {isLoadingUlasan && (
         <LoadingIndicator pesan="Mengambil ulasan penyewa dari External API..." />
       )}
@@ -288,7 +271,7 @@ export default function KostumDetail() {
       {errorUlasan && (
         <ErrorState
           pesan={errorUlasan}
-          onRetry={() => handleMuatUlasan(false)}
+          onRetry={muatUlasan}
         />
       )}
 

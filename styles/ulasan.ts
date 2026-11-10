@@ -97,32 +97,4 @@ export const ulasanStyles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 13,
   },
-  simulationRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  btnSuccess: {
-    backgroundColor: "#e0e7ff",
-  },
-  btnError: {
-    backgroundColor: "#fee2e2",
-  },
-  btnTextSuccess: {
-    color: "#3730a3",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  btnTextError: {
-    color: "#991b1b",
-    fontWeight: "600",
-    fontSize: 12,
-  },
 });
